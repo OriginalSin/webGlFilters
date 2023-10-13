@@ -1,0 +1,25 @@
+{
+  "name": "webgfilters",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^2.4.2",
+    "svelte": "^4.0.5",
+    "vite": "^4.4.5",
+    "vite-plugin-glsl": "^1.1.2",
+    "vite-plugin-mkcert": "^1.15.0",
+    "vite-svg-plugin": "^1.0.4"
+  },
+  "dependencies": {
+    "earcut": "^2.2.4",
+    "geotiff": "^2.0.7",
+    "geotiff-geokeys-to-proj4": "^2022.9.7",
+    "proj4": "^2.9.0"
+  }
+}

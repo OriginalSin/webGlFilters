@@ -1,0 +1,94 @@
+@keyframes notify-opening {
+    from {width: 0px;}
+    to {width: 300px;}
+}
+
+@keyframes notify-closing {
+    from {width: 300px;}
+    to {width: 0px;}
+}
+
+.scanex-notify-container {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    margin-top: 60px;
+    z-index: 1000000;
+}
+.scanex-notify-container .scanex-notify {    
+    margin: 5px 10px;    
+    width: 270px;
+    font: 13px MontserratSemiBold;
+    color: #3B3F61;
+    background-color: #FFFFFF;
+    box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    border-radius: 8px 12px 12px 8px;
+    cursor: default;
+    float: right;
+    clear: both;
+}
+.scanex-notify-container .scanex-notify.opening,
+.scanex-notify-container .scanex-notify.closing {
+    animation-name: notify-opening;
+    animation-duration: 0.5s;
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+}
+.scanex-notify-container .scanex-notify.closing {
+    animation-name: notify-closing;
+    animation-duration: 0.5s;
+    animation-fill-mode: both;
+    animation-timing-function: linear;
+}
+.scanex-notify-container .scanex-notify.noselect {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+.scanex-notify-container .scanex-notify td:first-child > * {
+    width: 8px;
+    height: 71px;
+    border-radius: 8px 0 0 8px;
+    display: block;
+}
+.scanex-notify-container .scanex-notify .message {
+    width: 250px;
+}
+.scanex-notify-container .scanex-notify.notify-green td:first-child > * {
+    background-color: #226B4B;
+}
+.scanex-notify-container .scanex-notify.notify-red td:first-child > * {
+    background-color:#F43B3B;    
+}
+.scanex-notify-container .scanex-notify.notify-orange td:first-child > * {
+    background-color: #FFB801;
+}
+.scanex-notify-container .scanex-notify .text {
+    padding: 0 20px;
+}
+.scanex-notify-container .scanex-notify .scanex-notify-icon {
+    background-position: center;
+    background-repeat: no-repeat;
+    display: inline-block;
+}
+.scanex-notify-container .scanex-notify i.notify-close {
+	position: absolute;
+    right: -5px;
+    top: 10px;
+    cursor: pointer;
+}
+.scanex-notify-container .scanex-notify i.notify-close svg {
+    width: 12px;
+    height: 12px;
+}
+.scanex-notify-container i {
+    margin: 0px 20px 0px -38px;
+}
+.scanex-notify-container table svg {
+    width: 35px;
+    height: 35px;
+}
