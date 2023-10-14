@@ -31,26 +31,16 @@ class Contrast extends ColorMatrix {
         let gl = this.gl;
 		gl.useProgram(this.id);
 
-// console.log(' __apply____', this, source, target, val);
 		this.bindBuffer(bitmap);
-
-  var originalImageTexture = Program.createAndSetupTexture(gl);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
-    
+		gl.bindTexture(gl.TEXTURE_2D, source.texture);
 		gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);	// make this the framebuffer we are rendering to.
 
     // Tell the shader the resolution of the framebuffer.
     // gl.uniform2f(resolutionLocation, bitmap.width, bitmap.height);
-   
-		gl.viewport(0, 0, bitmap.width, bitmap.height);		 // Tell webgl the viewport setting needed for framebuffer.
-		this.enableAttribArrays();
-		gl.uniform1fv(this.fs.uniform['m'].location, this.m);
-		// gl.uniform1f(this.vs.uniform['flipY'].location, (flipY ? -1 : 1) );
 
-    
+		gl.uniform1fv(this.fs.uniform['m'].location, this.m);
+
 		gl.drawArrays(gl.TRIANGLES, 0, 6);	// Draw the rectangle.
-	
-		
     }
 
 }

@@ -5,6 +5,8 @@ import ColorMatrix from './ColorMatrix';
 import Brightness from './Brightness';
 import Contrast from './Contrast';
 import Saturation from './Saturation';
+import RgbChange from './RgbChange';
+import Rgb from './Rgb';
 import Program from './Program';
 
 // import ImageFilter from './ImageFilter.js'
@@ -82,6 +84,12 @@ const glUtils = {
 						// out = glUtils.programsAttr[key] || {},
 						p;
 					switch (key) {
+						case 'rgb':
+							p = new Rgb({...info, gl});
+							break;
+						case 'rgbchange':
+							p = new RgbChange({...info, gl});
+							break;
 						case 'saturation':
 							p = new Saturation({...info, gl});
 							break;

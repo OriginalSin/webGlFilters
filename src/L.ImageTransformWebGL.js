@@ -65,14 +65,6 @@ var ext = L.extend({
 		this._wglOptions = {
 			canvas: this._offscreen,
 			programs: [
-				// {
-					// key: 'ColorMatrix'
-					
-				// },
-				{
-					key: 'Saturation'
-					
-				},
 				{
 					key: 'Contrast'
 					
@@ -81,6 +73,18 @@ var ext = L.extend({
 					key: 'Brightness'
 					
 				},
+				{
+					key: 'RgbChange'
+					
+				},
+				{
+					key: 'Rgb'
+					
+				},
+				// {
+					// key: 'Saturation'
+					
+				// },
 				{
 					anchors: this._getAnchors(),
 					clipRings: this._pClipPolygon(this.options.clip),

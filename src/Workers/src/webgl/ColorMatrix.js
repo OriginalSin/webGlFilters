@@ -125,40 +125,6 @@ class ColorMatrix extends Program {
 
 	}
 
-    init() {
-        const gl = this.gl;
-		const vs = Program.compileShader(gl, this.vsSource, gl.VERTEX_SHADER);
-		const fs = Program.compileShader(gl, this.fsSource, gl.FRAGMENT_SHADER);
-		const id = gl.createProgram();
-		this.id = id;
-		this.vs = vs;
-		this.fs = fs;
-		gl.attachShader(id, vs.shader);
-		gl.attachShader(id, fs.shader);
-		gl.linkProgram(id);
-
-		if( !gl.getProgramParameter(id, gl.LINK_STATUS) ) {
-			console.warn(gl.getProgramInfoLog(id));
-		}
-		gl.useProgram(id);
-		
-		[vs, fs].forEach(it => {
-			const {source} = it;
-			const pt = ['attribute', 'uniform'].reduce((a, c) => {
-				const attr = Program.parseShaderSource(gl, source, c, id);
-				// this._attribArrays.push(attr);
-				a[c] = attr;
-				return a;
-			}, {});
-			it.attribute = pt.attribute;
-			it.uniform = pt.uniform;
-		});
-
-		// const { fsSource = fss_alpha} = opt;
-// console.log(' __init____', this);
-
-	}
-
     apply(pars) {
 		let { source, bitmap, target, vertices, fbo, texture, flipY } = pars;
         let gl = this.gl;
@@ -168,17 +134,8 @@ console.log(' __apply____', this, source, target);
 		  var texcoordBuffer = gl.createBuffer();
 		  gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
 		  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-			// var vertices = new Float32Array([
 				-1, -1, 0, 1,  1, -1, 1, 1,  -1, 1, 0, 0,
 				-1, 1, 0, 0,  1, -1, 1, 1,  1, 1, 1, 0
-			// ]);
-
-			  // 0.0,  0.0,
-			  // 1.0,  0.0,
-			  // 0.0,  1.0,
-			  // 0.0,  1.0,
-			  // 1.0,  0.0,
-			  // 1.0,  1.0,
 		  ]), gl.STATIC_DRAW);
   var originalImageTexture = Program.createAndSetupTexture(gl);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
@@ -199,84 +156,7 @@ gl.uniform1f(this.vs.uniform['flipY'].location, (flipY ? -1 : 1) );
     // Draw the rectangle.
 		gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-/*
-		// this.enableAttribArrays();
-		// gl.bindTexture(gl.TEXTURE_2D, source.texture);
-		// gl.bindTexture(gl.TEXTURE_2D, source);
-		// gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-		// gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-		// gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-		// gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST); 
-			// gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
-// gl.framebufferTexture2D(gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, targetTexture, level);
-
-		gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
-		gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
-// let histogramData = new Float32Array(_width * _height * 4);
-// gl.readPixels(0, 0, _width, _height, gl.RGBA, gl.FLOAT, histogramData);
-
-// if (!target) gl.uniformMatrix4fv(_currentProgram.uniform.uTransformMatrix, false, dataAttr._matrix4fv);
-			// gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-			// gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-		gl.uniform1f(this.vs.uniform['flipY'].location, 1);
-		// gl.uniform1f(this.vs.uniform.flipY, (flipY ? -1 : 1) );
-		gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-		let source = null, target = null, flipY = false;
-
-		// Set up the source
-		if( _drawCount == 0 ) {
-			// First draw call - use the source texture
-			source = _sourceTexture;
-		}
-		else {
-			// All following draw calls use the temp buffer last drawn to
-			source =  _getTempFramebuffer(_currentFramebufferIndex).texture;
-		}
-		_drawCount++;
-
-		// Set up the target
-		if( _lastInChain && !(flags & DRAW.INTERMEDIATE) ) {
-			// Last filter in our chain - draw directly to the WebGL Canvas. We may
-			// also have to flip the image vertically now
-lastFBO = target;
-			target = null;
-			flipY = _drawCount % 2 == 0;
-		} else {
-			// Intermediate draw call - get a temp buffer to draw to
-			_currentFramebufferIndex = (_currentFramebufferIndex+1) % 2;
-			target = _getTempFramebuffer(_currentFramebufferIndex).fbo;
-		}
-
-		// Bind the source and target and draw the two triangles
-		gl.bindTexture(gl.TEXTURE_2D, source);
-		gl.bindFramebuffer(gl.FRAMEBUFFER, target);
-// let histogramData = new Float32Array(_width * _height * 4);
-// gl.readPixels(0, 0, _width, _height, gl.RGBA, gl.FLOAT, histogramData);
-
-if (!target) gl.uniformMatrix4fv(_currentProgram.uniform.uTransformMatrix, false, dataAttr._matrix4fv);
-		// gl.uniform1f(_currentProgram.uniform.flipY, (flipY ? -1 : 1) );
-		gl.drawArrays(gl.TRIANGLES, 0, 6);
-		*/
     }
-    // bindBuffer() {
-        // let gl = this.gl;
-		// gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-    // }
-    // enableAttribArrays() {
-        // let gl = this.gl;
-		// const vertAttrib = this.vs.attribute['aVertCoord'].location;	// Find and set up the uniforms and attributes
-		// gl.enableVertexAttribArray(vertAttrib);
-		// gl.vertexAttribPointer(vertAttrib, 2, gl.FLOAT, false, 0, 0);
-    // }
-    // bindTexture() {
-        // let gl = this.gl;
-		// gl.activeTexture(gl.TEXTURE0);
-		// gl.bindTexture(gl.TEXTURE_2D, this.texture.screenTexture);
-		// const samplerUniform = this.fs.uniform['uSampler'].location;
-		// gl.uniform1i(samplerUniform, 0);
-    // }
-
 }
 
 export default ColorMatrix;

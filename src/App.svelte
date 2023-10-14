@@ -1,6 +1,6 @@
 <script>
 	// import Render from './webgl/index.js';
-	// import DoubleRangeSlider from './DoubleRangeSlider.svelte';
+	import DoubleRangeSlider from './DoubleRangeSlider.svelte';
 	import { _userInfo } from "./stores.js";
 	import { onMount, tick } from 'svelte';
 // import * as geokeysToProj4 from "geotiff-geokeys-to-proj4";

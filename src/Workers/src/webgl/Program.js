@@ -123,24 +123,55 @@ class Program {
 
     init() {
         const gl = this.gl;
-
 		const vs = Program.compileShader(gl, this.vsSource, gl.VERTEX_SHADER);
 		const fs = Program.compileShader(gl, this.fsSource, gl.FRAGMENT_SHADER);
 		const id = gl.createProgram();
 		this.id = id;
 		this.vs = vs;
 		this.fs = fs;
+		gl.attachShader(id, vs.shader);
+		gl.attachShader(id, fs.shader);
+		gl.linkProgram(id);
+
+		if( !gl.getProgramParameter(id, gl.LINK_STATUS) ) {
+			console.warn(gl.getProgramInfoLog(id));
+		}
+		gl.useProgram(id);
+		
+		[vs, fs].forEach(it => {
+			const {source} = it;
+			const pt = ['attribute', 'uniform'].reduce((a, c) => {
+				const attr = Program.parseShaderSource(gl, source, c, id);
+				a[c] = attr;
+				return a;
+			}, {});
+			it.attribute = pt.attribute;
+			it.uniform = pt.uniform;
+		});
 	}
+
+    // init() {
+        // const gl = this.gl;
+
+		// const vs = Program.compileShader(gl, this.vsSource, gl.VERTEX_SHADER);
+		// const fs = Program.compileShader(gl, this.fsSource, gl.FRAGMENT_SHADER);
+		// const id = gl.createProgram();
+		// this.id = id;
+		// this.vs = vs;
+		// this.fs = fs;
+	// }
 
     bindBuffer(bitmap) {
         const { width, height } = bitmap;
         const gl = this.gl;
+		gl.viewport(0, 0, width, height);		 // Tell webgl the viewport setting needed for framebuffer.
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 			// Note sure if this is a good idea; at least it makes texture loading
 			// in Ejecta instant.
 		// gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
 // console.log(' __ bindBuffer ____', vertices);
+		this.enableAttribArrays();
     }
 
     enableAttribArrays() {
@@ -148,7 +179,6 @@ class Program {
 		const vertAttrib = this.vs.attribute['pos'].location;	// Find and set up the uniforms and attributes
 		gl.enableVertexAttribArray(vertAttrib);
 		gl.vertexAttribPointer(vertAttrib, 2, gl.FLOAT, false, vertSize , 0);
-		// gl.vertexAttribPointer(vertAttrib, 2, gl.FLOAT, false, 0, 0);
 		const uv = this.vs.attribute['uv'].location;	// Find and set up the uniforms and attributes
 		gl.enableVertexAttribArray(uv);
 		gl.vertexAttribPointer(uv, 2, gl.FLOAT, false, vertSize, 2 * floatSize);
