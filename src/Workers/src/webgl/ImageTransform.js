@@ -39,48 +39,43 @@ const _getClipTriangles = ( clipPolygon, invMatrix ) => {
 	return new Float32Array(vertices);
 };
 
-const attributes = {
-	aVertCoord: 'aVertCoord', 				// полигон обрезки ()
-};
-const uniforms = {
-	uTransformMatrix: 'uTransformMatrix',	// матрица трансформации ()
-	uSampler: 'uSampler', 					// uSampler ()
-};
+// const attributes = {
+	// aVertCoord: 'aVertCoord', 				// полигон обрезки ()
+// };
+// const uniforms = {
+	// uTransformMatrix: 'uTransformMatrix',	// матрица трансформации ()
+	// uSampler: 'uSampler', 					// uSampler ()
+// };
 const vss = `
-	attribute vec2 ${attributes.aVertCoord};
-	uniform mat4 ${uniforms.uTransformMatrix};
+	attribute vec2 aVertCoord;
+	uniform mat4 uTransformMatrix;
 	varying vec2 vTextureCoord;
 	void main(void) {
-		vTextureCoord = ${attributes.aVertCoord};
-		gl_Position = ${uniforms.uTransformMatrix} * vec4(${attributes.aVertCoord}, 0.0, 1.0);
+		vTextureCoord = aVertCoord;
+		gl_Position = uTransformMatrix * vec4(aVertCoord, 0.0, 1.0);
 	}
 `;
 const fss = `
 	precision mediump float;
 	varying vec2 vTextureCoord;
-	uniform sampler2D ${uniforms.uSampler};
+	uniform sampler2D uSampler;
 	void main(void) {
 		if (vTextureCoord.x < 0.0 || vTextureCoord.x > 1.0 || vTextureCoord.y < 0.0 || vTextureCoord.y > 1.0)
 			discard;
-		gl_FragColor = texture2D(${uniforms.uSampler}, vTextureCoord);
+		gl_FragColor = texture2D(uSampler, vTextureCoord);
 	}
 `;
-
 
 class ImageTransform extends Program {
 
 	constructor(opt) {
-	// constructor(opt, gl, resolve) {
-		// opt.gl = gl;
 		opt.vsSource = vss;
 		opt.fsSource = fss;
 		super(opt);
 		const { anchors, clipPolygon } = opt;
 		this.anchors = anchors;
 		this.clipPolygon = clipPolygon;
-		// const { vsSource, fsSource, gl } = opt;
 		this.texture = new Texture(opt);
-        // this.vertexBuffer = this.gl.createBuffer();		// Create a buffer to hold the vertices
 
 	}
 
@@ -123,10 +118,6 @@ class ImageTransform extends Program {
 	return this.texture.getUrl(url);
   }
 
-    // bindBuffer() {
-        // let gl = this.gl;
-		// gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-    // }
     enableAttribArrays() {
         let gl = this.gl;
 		const vertAttrib = this.vs.attribute['aVertCoord'].location;	// Find and set up the uniforms and attributes
@@ -137,28 +128,13 @@ class ImageTransform extends Program {
         let gl = this.gl;
 		gl.activeTexture(gl.TEXTURE0);
 		if (target) {
-			// gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, target.texture);
-// gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);  
-		// gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
-// gl.framebufferTexture2D(
-    // gl.FRAMEBUFFER, 
-    // gl.COLOR_ATTACHMENT0,  // attach texture as COLOR_ATTACHMENT0
-    // gl.TEXTURE_2D,         // attach a 2D texture
-    // this.texture.screenTexture,           // the texture to attach
-    // target.texture,           // the texture to attach
-    // 0);                    // the mip level to render to (must be 0 in WebGL1)
-
-if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
-	console.warn(gl.FRAMEBUFFER);
-  // these attachments don't work
-}
-			// gl.bindTexture(gl.TEXTURE_2D, this.texture.screenTexture);
-			// gl.bindTexture(gl.TEXTURE_2D, target.texture);
+			if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+				console.warn(gl.FRAMEBUFFER);
+			  // these attachments don't work
+			}
 			const samplerUniform = this.fs.uniform['uSampler'].location;
 			gl.uniform1i(samplerUniform, 0);
-
-			// gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
 		} else {
 			gl.bindTexture(gl.TEXTURE_2D, this.texture.screenTexture);
 			const samplerUniform = this.fs.uniform['uSampler'].location;
@@ -167,7 +143,7 @@ if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
     }
     apply(pars) {
 		let { anchors, clipPolygon, source, target } = pars;
-console.log(' __apply____', this);
+// console.log(' __apply____', this);
         let gl = this.gl;
 		gl.useProgram(this.id);
 
@@ -185,14 +161,11 @@ console.log(' __apply____', this);
 		}
 
 		if (clipVertices.length) {	// обрезка по полигону
-		// gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
 			gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
 			gl.bufferData(gl.ARRAY_BUFFER, clipVertices, gl.STATIC_DRAW);
 		}
 
-		// this.bindBuffer();
 		this.enableAttribArrays();
-		// this.bindTexture();
 		this.bindTexture(source);
 
 		gl.drawArrays(gl.TRIANGLES, 0, clipVertices.length / 2);		// draw the triangles

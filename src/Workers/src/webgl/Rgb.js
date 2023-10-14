@@ -1,15 +1,5 @@
 import Program from './Program';
-import Texture from './Texture';
 
-const attributes = {
-	// aVertCoord: 'aVertCoord', 				// полигон обрезки ()
-};
-const uniforms = {
-	rzam: 'rzam',							// 
-	gzam: 'gzam',							// 
-	bzam: 'bzam',							// 
-	texture: 'texture', 					// uSampler ()
-};
 const fss = `
 	precision highp float;
 	varying vec2 vUv;
@@ -38,11 +28,6 @@ class Rgb extends Program {
 
     apply(pars) {
 		let { source, bitmap, target, vertices, fbo, texture, params } = pars;
-        let parsData = params.ImageFilters;
-        let changed = parsData.changed;
-		let filters = parsData.filters;
-console.log(' ___  ____', filters);
-
 
         let gl = this.gl;
 		gl.useProgram(this.id);
@@ -53,6 +38,10 @@ console.log(' ___  ____', filters);
     // Tell the shader the resolution of the framebuffer. 
     // gl.uniform2f(resolutionLocation, bitmap.width, bitmap.height); 
 
+        let parsData = params.ImageFilters;
+        // let changed = parsData.changed;
+		let filters = parsData.filters;
+// console.log(' ___  ____', filters);
 		// gl.uniform2f(this.fs.uniform.rband.location, 0.5, 0.7);
 		gl.uniform2f(this.fs.uniform.rband.location, filters.startRed, filters.endRed);
 		gl.uniform2f(this.fs.uniform.gband.location, filters.startGreen, filters.endGreen);
