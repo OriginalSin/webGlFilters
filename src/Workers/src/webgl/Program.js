@@ -5,7 +5,7 @@ const attributes = {
 	uv: 'uv', 							// полигон обрезки ()
 };
 const uniforms = {
-	flipY: 'flipY',	// матрица трансформации ()
+	// flipY: 'flipY',	// матрица трансформации ()
 	texture: 'texture', 					// uSampler ()
 };
 const vertices = new Float32Array([
@@ -20,11 +20,12 @@ const vss = `
 	attribute vec2 ${attributes.pos};
 	attribute vec2 ${attributes.uv};
 	varying vec2 vUv;
-	uniform float ${uniforms.flipY};
+	// uniform float ${uniforms.flipY};
 
 	void main(void) {
 		vUv = uv;
-		gl_Position = vec4(${attributes.pos}.x, ${attributes.pos}.y*${uniforms.flipY}, 0.0, 1.);
+		// gl_Position = vec4(${attributes.pos}.x, ${attributes.pos}.y*${uniforms.flipY}, 0.0, 1.);
+		gl_Position = vec4(${attributes.pos}.x, -${attributes.pos}.y, 0.0, 1.);
 	}
 `;
 const fss = `
@@ -36,8 +37,44 @@ const fss = `
 		gl_FragColor = texture2D(${uniforms.texture}, vUv);
 	}
 `;
+const _tempFramebuffers = [null, null];
+  // create 2 textures and attach them to framebuffers.
+
+// let _currentFramebufferIndex = -1;
+const _getTempFramebuffer = (gl, bitmap, index) => {
+	_tempFramebuffers[index] = _tempFramebuffers[index] ||  _createFramebufferTexture(gl, bitmap);
+	return _tempFramebuffers[index];
+};
+
+const _createFramebufferTexture = (gl, bitmap) => {
+	let fbo = gl.createFramebuffer();
+	gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+
+	let renderbuffer = gl.createRenderbuffer();
+	gl.bindRenderbuffer(gl.RENDERBUFFER, renderbuffer);
+
+	let texture = gl.createTexture();
+	gl.bindTexture(gl.TEXTURE_2D, texture);
+	// gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.canvas.width, gl.canvas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, bitmap.width, bitmap.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+	gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+
+	gl.bindTexture(gl.TEXTURE_2D, null);
+	gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+	return {fbo, texture};
+};
 
 class Program {
+	static getTempFramebuffer( gl, bitmap, index ) {
+		return _getTempFramebuffer( gl, bitmap, index );
+	}
 	static compileShader( gl, source, type ) {
 		const shader = gl.createShader(type);
 		gl.shaderSource(shader, source);
@@ -59,12 +96,25 @@ class Program {
 			return a;
 		}, {});
 	}
+	static createAndSetupTexture( gl ) {
+		const texture = gl.createTexture();
+		gl.bindTexture(gl.TEXTURE_2D, texture);
+
+		// Set up texture so we can render any size image and so we are
+		// working with pixels.
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+		return texture;
+	}
 
 	constructor(opt) {
-		const { vsSource = vss, fsSource = fss, gl, anchors, clipPolygon } = opt;
+		const { vsSource = vss, fsSource = fss, gl, anchors, clipPolygon, m } = opt;
 		this.gl = gl;
 		this.vsSource = vsSource;
 		this.fsSource = fsSource;
+		this.m = m;
         this.vertexBuffer = gl.createBuffer();		// Create a buffer to hold the vertices
 		this.init();
 
@@ -82,18 +132,17 @@ class Program {
 		this.fs = fs;
 	}
 
-    bindBuffer() {
-        let gl = this.gl;
+    bindBuffer(bitmap) {
+        const { width, height } = bitmap;
+        const gl = this.gl;
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-			// _vertexBuffer = gl.createBuffer(),
-			// gl.bindBuffer(gl.ARRAY_BUFFER, _vertexBuffer);
-			gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+		gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
 			// Note sure if this is a good idea; at least it makes texture loading
 			// in Ejecta instant.
-			gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
-console.log(' __ bindBuffer ____', vertices);
-
+		// gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true);
+// console.log(' __ bindBuffer ____', vertices);
     }
+
     enableAttribArrays() {
         let gl = this.gl;
 		const vertAttrib = this.vs.attribute['pos'].location;	// Find and set up the uniforms and attributes
@@ -105,16 +154,17 @@ console.log(' __ bindBuffer ____', vertices);
 		gl.vertexAttribPointer(uv, 2, gl.FLOAT, false, vertSize, 2 * floatSize);
     }
     bindTexture() {
-        let gl = this.gl;
-		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, this.texture.screenTexture);
-		const samplerUniform = this.fs.uniform['texture'].location;
-		gl.uniform1i(samplerUniform, 0);
+        // let gl = this.gl;
+		// gl.activeTexture(gl.TEXTURE0);
+// console.log(' __ bindTexture ____', this.texture.screenTexture);
+		// gl.bindTexture(gl.TEXTURE_2D, this.texture.screenTexture);
+		// const samplerUniform = this.fs.uniform['texture'].location;
+		// gl.uniform1i(samplerUniform, 0);
     }
 
     apply() {
         let gl = this.gl;
-		gl.useProgram(this.id);
+		// gl.useProgram(this.id);
 console.log(' __apply____', this);
 
 

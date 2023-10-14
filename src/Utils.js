@@ -41,7 +41,8 @@ const Utils = {
 			window.addEventListener('error', windowErrorHandler);  
 			let rejectHandler = (event) =>{
 				window.removeEventListener('error', windowErrorHandler);
-				reject(event.error);                        
+			resolve();
+				// reject(event.error);                        
 			};              
 			script.addEventListener('error', rejectHandler);                
 			script.addEventListener('abort', rejectHandler);            
@@ -62,9 +63,10 @@ const Utils = {
 			} catch (error) {
 				reject(error);
 			}
-		})
-		.catch ((err) => {
-			console.warn('Skip:', url, err.message);
+		// })
+		// .catch ((err) => {
+			// console.warn('Skip:', url, err.message);
+			// resolve();
 		});
 	},
 	runScript: (url, opt = {async: false, defer: false}) => {

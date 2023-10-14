@@ -2,6 +2,10 @@ import earcut from 'earcut';
 import { getMatrix4fv, project } from './Matrix4fv.js';
 import ImageTransform from './ImageTransform';
 import ColorMatrix from './ColorMatrix';
+import Brightness from './Brightness';
+import Contrast from './Contrast';
+import Saturation from './Saturation';
+import Program from './Program';
 
 // import ImageFilter from './ImageFilter.js'
 // import PolylineRender from './gmx/PolygonsRender.js'
@@ -13,15 +17,17 @@ import ColorMatrix from './ColorMatrix';
 const glOpts = { antialias: true, depth: false, preserveDrawingBuffer: true };
 const qualityOptions = { anisotropicFiltering: true, mipMapping: true, linearFiltering: true };
 let	_anisoExt = null, srcPoints, matrix, glResources, gl;
-
+/*
 const _tempFramebuffers = [null, null];
+  // create 2 textures and attach them to framebuffers.
+
 let _currentFramebufferIndex = -1;
-	const _getTempFramebuffer = (gl, index) => {
-		_tempFramebuffers[index] = _tempFramebuffers[index] ||  _createFramebufferTexture(gl);
+	const _getTempFramebuffer = (gl, bitmap, index) => {
+		_tempFramebuffers[index] = _tempFramebuffers[index] ||  _createFramebufferTexture(gl, bitmap);
 		return _tempFramebuffers[index];
 	};
 
-	const _createFramebufferTexture = (gl) => {
+	const _createFramebufferTexture = (gl, bitmap) => {
 		let fbo = gl.createFramebuffer();
 		gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
 
@@ -30,7 +36,8 @@ let _currentFramebufferIndex = -1;
 
 		let texture = gl.createTexture();
 		gl.bindTexture(gl.TEXTURE_2D, texture);
-		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.canvas.width, gl.canvas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+		// gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.canvas.width, gl.canvas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, bitmap.width, bitmap.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
 
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -44,8 +51,10 @@ let _currentFramebufferIndex = -1;
 
 		return {fbo, texture};
 	};
-
+*/
 const glUtils = {
+	programsAttr: {
+	},
 	createGL: (pars) => {
 		const {canvas, programs=[]} = pars;
 		return new Promise(resolve => {
@@ -64,25 +73,53 @@ const glUtils = {
 				}
 
 				gl.viewport(0, 0, canvas.width, canvas.height);
-				gl._nsgx = {};
+				const screenSize = {
+					width: canvas.width, height: canvas.height
+				};
 				let progs = [];
-				programs.forEach(pInfo => {
-					let key = pInfo.key;
-					if (key === 'ImageTransform') {
-						let p = new ImageTransform({...pInfo, gl, resolve});
-						if (p.vs.shader && p.fs.shader) {
-							if (pInfo.url) {
-								p.getUrl().then(pt => resolve({ready:true}));
-							}
-							// p.vertexBuffer = gl.createBuffer();		// Create a buffer to hold the vertices
-							progs.push(p);
-						}
-					} else if (key === 'ColorMatrix') {
-						let p = new ColorMatrix({...pInfo, gl});
-						progs.push(p);
+				programs.forEach(info => {
+					let key = info.key.toLowerCase(),
+						// out = glUtils.programsAttr[key] || {},
+						p;
+					switch (key) {
+						case 'saturation':
+							p = new Saturation({...info, gl});
+							break;
+						case 'contrast':
+							p = new Contrast({...info, gl});
+							break;
+						case 'brightness':
+							p = new Brightness({...info, gl});
+							// progs.push(p);
+							break;
+						case 'colormatrix':
+							p = new ColorMatrix({...info, gl});
+							break;
+						case 'imagetransform':
+							p = new ImageTransform({...info, gl, resolve});
+							// if (p.vs.shader && p.fs.shader) {
+								if (info.url) {
+									p.getUrl().then(pt => {
+										gl._nsgx.bitmap = p.texture.bitmap;
+										gl._nsgx.screenTexture = p.texture.screenTexture;
+										const { width, height } = p.texture.bitmap;
+										// canvas.width = width, canvas.height = height;
+		// gl.viewport(0, 0, width, height);
+
+										resolve({ready:true});
+									});
+								}
+								// p.vertexBuffer = gl.createBuffer();		// Create a buffer to hold the vertices
+								// progs.push(p);
+							// }
+							break;
+						default:
+							break;
 					}
+					progs.push(p);
+					// glUtils.programsAttr[key] = {...out, info, p }; 
 				});
-				gl._nsgx = {progs};
+				gl._nsgx = {screenSize, canvas, progs};
 			} else {
 				console.warn('Your browser doesn`t seem to support WebGL.');
 			}
@@ -90,28 +127,85 @@ const glUtils = {
 		return out;
 	},
 
+    setParams: function (pars) {
+		const { anchors, clipPolygon, cmd, filters } = pars;
+		if (cmd === 'ImageFilters') {
+			const prev = glUtils.programsAttr[cmd] || {};
+			const changed = prev.changed || {};
+			Object.entries(filters).forEach(([k, v]) => {
+				if (v !== prev[k]) changed[k] = true;
+			});
+			glUtils.programsAttr[cmd] = {filters, changed};
+			if (Object.keys(changed).length) glUtils.redrawGl({});
+		}
+console.log(' ___ setParams ____', pars, glUtils.programsAttr);
+	},
+
     redrawGl: function (pars) {
 		let { anchors, clipPolygon } = pars;
+		if (!gl) return;
+		const progs = gl._nsgx.progs;
+		const bitmap = gl._nsgx.bitmap;
+		const screenTexture = gl._nsgx.screenTexture;
+/*
+var textures = [];
+var framebuffers = [];
+for (var ii = 0; ii < 2; ++ii) {
+    var texture = Program.createAndSetupTexture(gl);
+    textures.push(texture);
 
+    // make the texture the same size as the image
+    gl.texImage2D(
+        gl.TEXTURE_2D, 0, gl.RGBA, bitmap.width, bitmap.height, 0,
+        gl.RGBA, gl.UNSIGNED_BYTE, null);
+
+    // Create a framebuffer
+    var fbo = gl.createFramebuffer();
+    framebuffers.push(fbo);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+
+    // Attach a texture to it.
+    gl.framebufferTexture2D(
+        gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+}
+*/
 		gl.clearColor(0, 0, 0, 0);
+		gl.viewport(0, 0, bitmap.width, bitmap.height);
+
 		// gl.viewport(0, 0, offscreen.width, offscreen.height);
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-		const progs = gl._nsgx.progs;
 		const lnum = progs.length - 1;
-		let source, target, vertices, bitmap;
+		let source = {texture: screenTexture}, target, vertices, params = glUtils.programsAttr;
 		for (let i = 0; i < lnum; i++) {
 			const p = progs[i];
+			let nm = i % 2;
+			let flipY = i % 2 == 1;
+			target = Program.getTempFramebuffer(gl, bitmap, nm);
+
+			// let fbo = framebuffers[nm];
+			// let texture = textures[nm];
+			p.apply({...pars, bitmap, source, target, flipY, params});
+			// p.apply({...pars, bitmap, source, fbo, texture, flipY});
+		// Bind the source and target and draw the two triangles
+		// gl.bindTexture(gl.TEXTURE_2D, source);
+		// gl.bindFramebuffer(gl.FRAMEBUFFER, target);
+
+
 		// progs.forEach((p, i) => {
-			_currentFramebufferIndex = (_currentFramebufferIndex+1) % 2;
-			target = _getTempFramebuffer(gl, _currentFramebufferIndex);
-			p.apply({...pars, source, target});
-			if (!vertices) vertices = p._clipVertices;
-			if (!bitmap) bitmap = p.texture.bitmap;
+			// _currentFramebufferIndex = (_currentFramebufferIndex+1) % 2;
+			// target = _getTempFramebuffer(gl, bitmap, _currentFramebufferIndex);
+			// p.apply({...pars, bitmap, source, target});
+			// if (!vertices) vertices = p._clipVertices;
+			// if (!bitmap) bitmap = p.texture.bitmap;
 			source = target;
 			// source = _getTempFramebuffer(gl, _currentFramebufferIndex).texture;
-console.log(' ___  ____', p);
+console.log(' ___  ____', gl._nsgx.canvas);
 		}
-		progs[lnum].apply({...pars, source, vertices, bitmap});
+		// Bind the source and target and draw the two triangles
+		gl.bindTexture(gl.TEXTURE_2D, source.texture);
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+		gl.viewport(0, 0, gl._nsgx.screenSize.width, gl._nsgx.screenSize.height);
+		progs[lnum].apply({...pars, source, vertices, bitmap});	// imagetransform
 
 /*
 		const p0 = progs.ImageTransform;

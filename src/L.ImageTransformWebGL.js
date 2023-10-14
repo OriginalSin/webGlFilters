@@ -57,6 +57,7 @@ var ext = L.extend({
 			this.addInteractiveTarget(this._image);
 		}
 		var size = map.getSize();
+		this._size = size;
 		this._offscreen.width = size.x; this._offscreen.height = size.y;
 		L.DomUtil.addClass(this._image, 'leaflet-zoom-' + (this._map.options.zoomAnimation && L.Browser.any3d ? 'animated' : 'hide'));
 		if (this.options.zIndex) this._updateZIndex();
@@ -64,16 +65,28 @@ var ext = L.extend({
 		this._wglOptions = {
 			canvas: this._offscreen,
 			programs: [
+				// {
+					// key: 'ColorMatrix'
+					
+				// },
+				{
+					key: 'Saturation'
+					
+				},
+				{
+					key: 'Contrast'
+					
+				},
+				{
+					key: 'Brightness'
+					
+				},
 				{
 					anchors: this._getAnchors(),
 					clipRings: this._pClipPolygon(this.options.clip),
 					url: this._url,
 					key: 'ImageTransform'
 				},
-				// {
-					// key: 'ColorMatrix'
-					
-				// },
 			],
 			// anchors: this._getAnchors(),
 			// clipRings: this._pClipPolygon(this.options.clip),
@@ -103,12 +116,13 @@ var ext = L.extend({
     _onmoveend: function (e) {
 		this._topLeft = this._map.containerPointToLayerPoint([0, 0]);
 		L.DomUtil.setTransform(this._image, this._topLeft, 1);
-console.log(' ____onmoveend____', this._topLeft);
+// console.log(' ____onmoveend____', this._topLeft);
 		this._reset();
 		// setTimeout(this._reset, 250);
 	},
 	_onresize: function () {
 		var size = this._map.getSize();
+		this._size = size
 		this._offscreen.width = size.x; this._offscreen.height = size.y;
 console.log(' ___ _onresize ____', this._topLeft);
 		this._onmoveend();
@@ -126,7 +140,7 @@ console.log(' ___animateZoom____', e.zoom, e.center);
     _ringToPixels: function (ring, isLngLat) {
 		const map = this._map,
 			tl = this._topLeft || map.containerPointToLayerPoint([0, 0]),
-			w = 2 / this._offscreen.width, h = 2 / this._offscreen.height;
+			w = 2 / this._size.x, h = 2 / this._size.y;
 		return ring.map(it => {
 			const latlng = isLngLat ? L.latLng(it[1], it[0]) : it;
 			const lp = map.latLngToLayerPoint(latlng);
@@ -170,7 +184,7 @@ console.log(' ___animateZoom____', e.zoom, e.center);
 			
 			let pars = {
 				anchors: this.__anchors,
-				clipPolygon: this.__clipRings,
+				// clipPolygon: this.__clipRings,
 				// clipPolygon: this._wglOptions.clipRings,
 			};
 			// if (this.options.clip) pars.clipPolygon = this.__clipRings;

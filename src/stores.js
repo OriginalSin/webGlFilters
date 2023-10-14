@@ -7,8 +7,8 @@ const serverBasedPrefix = self.serverBase || 'https://maps.kosmosnimki.ru/';
 export const _select = writable(null);
 
 export const _userInfo = writable({}, async () => {
-	const res = await fetch(serverBasedPrefix + 'User/GetUserInfo.ashx', options);
-	_userInfo.set(res?.Result);
+	// const res = await fetch(serverBasedPrefix + 'User/GetUserInfo.ashx', options);
+	// _userInfo.set(res?.Result);
 });
 
 const keys = {

@@ -58,12 +58,69 @@ const fss = `
 	_filter.colorMatrix.SHADER = {};
 	_filter.colorMatrix.SHADER.WITH_ALPHA = colorMatrixWith_alphaShader;
 	_filter.colorMatrix.SHADER.WITHOUT_ALPHA = colorMatrixWithout_alphaShader;
+
+	function chkFS( matrix ) {
+console.log(' ___ chkFS ____', matrix);
+		matrix = matrix || [
+			1, 0, 0, 0, 0,
+			0, 1, 0, 0, 0,
+			0, 0, 1, 0, 0,
+			0, 0, 0, 1, 0
+		];
+		// Create a Float32 Array and normalize the offset component to 0-1
+		var m = new Float32Array(matrix);
+		m[4] /= 255;
+		m[9] /= 255;
+		m[14] /= 255;
+		m[19] /= 255;
+
+		// Can we ignore the alpha value? Makes things a bit faster.
+		return {
+			m,
+			shader: (1==m[18]&&0==m[3]&&0==m[8]&&0==m[13]&&0==m[15]&&0==m[16]&&0==m[17]&&0==m[19]) ? fss : fss_alpha
+		}
+				
+		
+		// var program = _compileShader(shader);
+		// gl.uniform1fv(program.uniform.m, m);
+		// _draw();
+	};
 */
+
+
 class ColorMatrix extends Program {
+    static chkFS(matrix) {
+// console.log(' ___ chkFS ____', matrix);
+		matrix = matrix || [
+			1, 0, 0, 0, 0,
+			0, 1, 0, 0, 0,
+			0, 0, 1, 0, 0,
+			0, 0, 0, 1, 0
+		];
+		// Create a Float32 Array and normalize the offset component to 0-1
+		var m = new Float32Array(matrix);
+		m[4] /= 255;
+		m[9] /= 255;
+		m[14] /= 255;
+		m[19] /= 255;
+
+		// Can we ignore the alpha value? Makes things a bit faster.
+		return {
+			m,
+			shader: (1==m[18]&&0==m[3]&&0==m[8]&&0==m[13]&&0==m[15]&&0==m[16]&&0==m[17]&&0==m[19]) ? fss : fss_alpha
+		};
+				
+		
+		// var program = _compileShader(shader);
+		// gl.uniform1fv(program.uniform.m, m);
+		// _draw();
+	};
 
 	constructor(opt, gl) {
+		const {m, shader} = ColorMatrix.chkFS(opt.value);
 		// opt.gl = gl;
-		opt.fsSource = fss_alpha;
+		opt.m = m;
+		opt.fsSource = shader;
 		super(opt);
 
 	}
@@ -102,39 +159,59 @@ class ColorMatrix extends Program {
 
 	}
 
-    // bindBuffer() {
-        // let gl = this.gl;
-		// gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-    // }
-    // enableAttribArrays() {
-        // let gl = this.gl;
-		// const vertAttrib = this.vs.attribute['aVertCoord'].location;	// Find and set up the uniforms and attributes
-		// gl.enableVertexAttribArray(vertAttrib);
-		// gl.vertexAttribPointer(vertAttrib, 2, gl.FLOAT, false, 0, 0);
-    // }
-    // bindTexture() {
-        // let gl = this.gl;
-		// gl.activeTexture(gl.TEXTURE0);
-		// gl.bindTexture(gl.TEXTURE_2D, this.texture.screenTexture);
-		// const samplerUniform = this.fs.uniform['uSampler'].location;
-		// gl.uniform1i(samplerUniform, 0);
-    // }
-
     apply(pars) {
-		let { source, bitmap, target, vertices } = pars;
+		let { source, bitmap, target, vertices, fbo, texture, flipY } = pars;
         let gl = this.gl;
 		gl.useProgram(this.id);
 console.log(' __apply____', this, source, target);
-		this.bindBuffer();
-		this.enableAttribArrays();
-		gl.bindTexture(gl.TEXTURE_2D, source.texture);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST); 
-			// gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
+		// this.bindBuffer(bitmap);
+		  var texcoordBuffer = gl.createBuffer();
+		  gl.bindBuffer(gl.ARRAY_BUFFER, texcoordBuffer);
+		  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+			// var vertices = new Float32Array([
+				-1, -1, 0, 1,  1, -1, 1, 1,  -1, 1, 0, 0,
+				-1, 1, 0, 0,  1, -1, 1, 1,  1, 1, 1, 0
+			// ]);
 
-		gl.bindFramebuffer(gl.FRAMEBUFFER, target);
+			  // 0.0,  0.0,
+			  // 1.0,  0.0,
+			  // 0.0,  1.0,
+			  // 0.0,  1.0,
+			  // 1.0,  0.0,
+			  // 1.0,  1.0,
+		  ]), gl.STATIC_DRAW);
+  var originalImageTexture = Program.createAndSetupTexture(gl);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
+    // make this the framebuffer we are rendering to.
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+
+    // Tell the shader the resolution of the framebuffer.
+    // gl.uniform2f(resolutionLocation, bitmap.width, bitmap.height);
+
+    // Tell webgl the viewport setting needed for framebuffer.
+    gl.viewport(0, 0, bitmap.width, bitmap.height);
+    // gl.uniform1fv(kernelLocation, kernels[name]);
+    // gl.uniform1f(kernelWeightLocation, computeKernelWeight(kernels[name]));
+		this.enableAttribArrays();
+gl.uniform1fv(this.fs.uniform['m'].location, this.m);
+gl.uniform1f(this.vs.uniform['flipY'].location, (flipY ? -1 : 1) );
+
+    // Draw the rectangle.
+		gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+/*
+		// this.enableAttribArrays();
+		// gl.bindTexture(gl.TEXTURE_2D, source.texture);
+		// gl.bindTexture(gl.TEXTURE_2D, source);
+		// gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		// gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		// gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+		// gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST); 
+			// gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, bitmap);
+// gl.framebufferTexture2D(gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, targetTexture, level);
+
+		gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
+		gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
 // let histogramData = new Float32Array(_width * _height * 4);
 // gl.readPixels(0, 0, _width, _height, gl.RGBA, gl.FLOAT, histogramData);
 
@@ -145,7 +222,6 @@ console.log(' __apply____', this, source, target);
 		// gl.uniform1f(this.vs.uniform.flipY, (flipY ? -1 : 1) );
 		gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-/*
 		let source = null, target = null, flipY = false;
 
 		// Set up the source
@@ -183,6 +259,23 @@ if (!target) gl.uniformMatrix4fv(_currentProgram.uniform.uTransformMatrix, false
 		gl.drawArrays(gl.TRIANGLES, 0, 6);
 		*/
     }
+    // bindBuffer() {
+        // let gl = this.gl;
+		// gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+    // }
+    // enableAttribArrays() {
+        // let gl = this.gl;
+		// const vertAttrib = this.vs.attribute['aVertCoord'].location;	// Find and set up the uniforms and attributes
+		// gl.enableVertexAttribArray(vertAttrib);
+		// gl.vertexAttribPointer(vertAttrib, 2, gl.FLOAT, false, 0, 0);
+    // }
+    // bindTexture() {
+        // let gl = this.gl;
+		// gl.activeTexture(gl.TEXTURE0);
+		// gl.bindTexture(gl.TEXTURE_2D, this.texture.screenTexture);
+		// const samplerUniform = this.fs.uniform['uSampler'].location;
+		// gl.uniform1i(samplerUniform, 0);
+    // }
 
 }
 

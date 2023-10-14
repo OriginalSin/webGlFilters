@@ -4,7 +4,7 @@ import { getMatrix4fv, project } from './Matrix4fv.js';
 import earcut from 'earcut';
 
 const _getFlatten = ( rings ) => {
-	return Array.isArray(rings[0]) ? rings.map(earcut.flatten) : [{ project: false, dimensions: 2, holes: [], vertices: rings }];
+	return Array.isArray(rings[0]) ? rings.map(earcut.flatten) : [{ projected: true, dimensions: 2, holes: [], vertices: rings }];
 };
 
 const _getClipTriangles = ( clipPolygon, invMatrix ) => {
@@ -15,14 +15,19 @@ const _getClipTriangles = ( clipPolygon, invMatrix ) => {
 	for (let i = 0, len = _clipFlatten.length; i < len; i++) {
 		let data = _clipFlatten[i],
 			len1 = data.vertices.length,
+			projected = data.projected,
 			size = data.dimensions;
 
-		data._pixelClipPoints = new Array(len1);
-		for (let j = 0; j < len1; j += size) {
-			let px = project(invMatrix, data.vertices[j], data.vertices[j + 1]);
-			data._pixelClipPoints[j] = px[0];
-			data._pixelClipPoints[j + 1] = px[1];
-		}
+		// if (projected) data._pixelClipPoints = data.vertices;
+		// else {
+			data._pixelClipPoints = new Array(len1);
+			for (let j = 0; j < len1; j += size) {
+				// let px = projected ? [data.vertices[j], data.vertices[j + 1]] : project(invMatrix, data.vertices[j], data.vertices[j + 1]);
+				let px = project(invMatrix, data.vertices[j], data.vertices[j + 1]);
+				data._pixelClipPoints[j] = px[0];
+				data._pixelClipPoints[j + 1] = px[1];
+			}
+		// }
 	}
 	_clipFlatten.forEach(data => {
 		let index = earcut(data.vertices, data.holes, data.dimensions);
@@ -64,7 +69,8 @@ const fss = `
 
 class ImageTransform extends Program {
 
-	constructor(opt, gl, resolve) {
+	constructor(opt) {
+	// constructor(opt, gl, resolve) {
 		// opt.gl = gl;
 		opt.vsSource = vss;
 		opt.fsSource = fss;
@@ -73,7 +79,7 @@ class ImageTransform extends Program {
 		this.anchors = anchors;
 		this.clipPolygon = clipPolygon;
 		// const { vsSource, fsSource, gl } = opt;
-		this.texture = new Texture(opt, resolve);
+		this.texture = new Texture(opt);
         // this.vertexBuffer = this.gl.createBuffer();		// Create a buffer to hold the vertices
 
 	}
@@ -117,10 +123,10 @@ class ImageTransform extends Program {
 	return this.texture.getUrl(url);
   }
 
-    bindBuffer() {
-        let gl = this.gl;
+    // bindBuffer() {
+        // let gl = this.gl;
 		// gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-    }
+    // }
     enableAttribArrays() {
         let gl = this.gl;
 		const vertAttrib = this.vs.attribute['aVertCoord'].location;	// Find and set up the uniforms and attributes
@@ -131,13 +137,28 @@ class ImageTransform extends Program {
         let gl = this.gl;
 		gl.activeTexture(gl.TEXTURE0);
 		if (target) {
-			gl.activeTexture(gl.TEXTURE0);
-			// gl.bindTexture(gl.TEXTURE_2D, this.texture.screenTexture);
+			// gl.activeTexture(gl.TEXTURE0);
 			gl.bindTexture(gl.TEXTURE_2D, target.texture);
+// gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);  
+		// gl.viewport(0, 0, this.gl.canvas.width, this.gl.canvas.height);
+// gl.framebufferTexture2D(
+    // gl.FRAMEBUFFER, 
+    // gl.COLOR_ATTACHMENT0,  // attach texture as COLOR_ATTACHMENT0
+    // gl.TEXTURE_2D,         // attach a 2D texture
+    // this.texture.screenTexture,           // the texture to attach
+    // target.texture,           // the texture to attach
+    // 0);                    // the mip level to render to (must be 0 in WebGL1)
+
+if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+	console.warn(gl.FRAMEBUFFER);
+  // these attachments don't work
+}
+			// gl.bindTexture(gl.TEXTURE_2D, this.texture.screenTexture);
+			// gl.bindTexture(gl.TEXTURE_2D, target.texture);
 			const samplerUniform = this.fs.uniform['uSampler'].location;
 			gl.uniform1i(samplerUniform, 0);
 
-			gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
+			// gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
 		} else {
 			gl.bindTexture(gl.TEXTURE_2D, this.texture.screenTexture);
 			const samplerUniform = this.fs.uniform['uSampler'].location;
@@ -145,7 +166,7 @@ class ImageTransform extends Program {
 		}
     }
     apply(pars) {
-		let { anchors, clipPolygon, target } = pars;
+		let { anchors, clipPolygon, source, target } = pars;
 console.log(' __apply____', this);
         let gl = this.gl;
 		gl.useProgram(this.id);
@@ -155,7 +176,10 @@ console.log(' __apply____', this);
 			const matrix = getMatrix4fv(this.texture.srcPoints, anchors);
 			gl.uniformMatrix4fv(this.vs.uniform['uTransformMatrix'].location, false, matrix.matrix4fv);
 			if (!clipVertices) {
-				clipVertices = _getClipTriangles(this.clipPolygon || this.anchors, matrix.invMatrix);
+				clipVertices = clipPolygon ?
+					_getClipTriangles(clipPolygon, matrix.invMatrix) :
+					_getClipTriangles(this.anchors, matrix.invMatrix);
+				// clipVertices = _getClipTriangles(clipPolygon || this.anchors, matrix.invMatrix);
 				this._clipVertices = clipVertices;
 			}
 		}
@@ -168,7 +192,8 @@ console.log(' __apply____', this);
 
 		// this.bindBuffer();
 		this.enableAttribArrays();
-		this.bindTexture(target);
+		// this.bindTexture();
+		this.bindTexture(source);
 
 		gl.drawArrays(gl.TRIANGLES, 0, clipVertices.length / 2);		// draw the triangles
 		return this._clipVertices;	// vertex текстуры

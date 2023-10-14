@@ -14,14 +14,15 @@ const _nextHighestPowerOfTwo = ( x ) => {
 
 class Texture {
 
-  constructor(opt, resolve) {
-	const { gl, url, anchors, clipRings } = opt;
+  constructor(opt) {
+	const { gl, url, anchors, clipRings, screenSize } = opt;
     this.gl = gl;
+    this.screenSize = screenSize;
     this.url = url;
     this.anchors = anchors;
     this.clipRings = clipRings;
 	this.screenTexture = gl.createTexture();		// Create a texture to use for the screen image
-    this.resolve = resolve;
+    // this.resolve = resolve;
 
 	// this._create();
 
@@ -61,6 +62,9 @@ class Texture {
 	gl.bindTexture(gl.TEXTURE_2D, null);
 
 	const w = ww / canvas.width, h = hh / canvas.height;
+	// const w = ww / this.screenSize.width, h = hh / this.screenSize.height;
+	// const w = ww, h = hh;
+console.log(' __ w ____', w, h);
 	const srcPoints = new Float32Array([ 0, 0,  0, h,  w, h,  w, 0 ]);	// bl, tl, tr, br
 	const matrix = getMatrix4fv(srcPoints, anchors);
     this.matrix = matrix;

@@ -1,7 +1,7 @@
 import Worker from './Workers'
 import Utils from './Utils';
 
-const libPrefix = '//www.kosmosnimki.ru/lib/geomixer_1.3/';
+let libPrefix = '//www.kosmosnimki.ru/lib/geomixer_1.3/';
 const quickLooks = [
 	{
 		anchorsLatLngs: [[47.20627509437822, 37.60396957397461], [47.20802436605374, 37.73983955383301], [47.14804977458752, 37.73271560668945], [47.14495586297567, 37.59993553161621]],	// [lat, lng]
@@ -36,11 +36,15 @@ const quickLooks = [
 
 export default {
 	start: async (node) => {
+		let scr = await Utils.loadScript(libPrefix + 'geomixer-src.js');
+if(!scr) {
+console.log('scr', scr);
+	libPrefix = '/geomixer/';
+	await Utils.loadScript(libPrefix + 'geomixer-src.js');
+}
 		Utils.loadCss(libPrefix + 'geomixer.css');
-		await Utils.loadScript(libPrefix + 'geomixer-src.js');
-		await Utils.loadScript('./src/L.ImageTransform.js');
+		// await Utils.loadScript('./src/L.ImageTransform.js');
 		await Utils.loadScript('./src/L.ImageTransformWebGL.js');
-// console.log('node', node, L.ImageTransform);
 
 		let current = quickLooks[1];
 		let map = new L.Map(node, {

@@ -27,7 +27,7 @@
 	const _glWorker = window.nsGmx.glWorker;
 
 $: {
-	if(curLayer) {
+	// if(curLayer) {
 		test = contrast + brightness;
 		rgbh = {
 			r:{min: startRed, max: endRed},
@@ -40,7 +40,7 @@ $: {
 			b: Number(bzam)
 		};
 		repaint();
-	}
+	// }
 }
 $: {
 	if(flagDownAll) {
@@ -55,6 +55,8 @@ $: {
 	};
 
 	const repaint = () => {
+// console.log(' ___ repaint ____', _glWorker, nsGmx.libGL);
+		
 		if (curLayer) {
 			curLayer.repaint();
 			params.LayerID = LayerID;
@@ -64,7 +66,7 @@ $: {
 			params.startGreen = startGreen; params.endGreen = endGreen;
 			params.startBlue = startBlue; params.endBlue = endBlue;
 		} else {
-			_glWorker.sendCmd({
+			nsGmx.libGL.setParams({
 				cmd: 'ImageFilters',
 				filters: {
 					contrast, brightness,
@@ -72,6 +74,14 @@ $: {
 					startRed, endRed, startGreen, endGreen, startBlue, endBlue
 				}
 			});
+			// _glWorker.sendCmd({
+				// cmd: 'ImageFilters',
+				// filters: {
+					// contrast, brightness,
+					// rzam, gzam, bzam,
+					// startRed, endRed, startGreen, endGreen, startBlue, endBlue
+				// }
+			// });
 		}
 	};
 
