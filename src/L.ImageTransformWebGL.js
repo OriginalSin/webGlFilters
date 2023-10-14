@@ -187,7 +187,7 @@ console.log(' ___animateZoom____', e.zoom, e.center);
 				// clipPolygon: this.__clipRings,
 				// clipPolygon: this._wglOptions.clipRings,
 			};
-			// if (this.options.clip) pars.clipPolygon = this.__clipRings;
+			if (this.options.clip) pars.clipPolygon = this.__clipRings;
 			wgl.redrawGl(pars);
 		}
     },
