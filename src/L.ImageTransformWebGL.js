@@ -81,10 +81,31 @@ var ext = L.extend({
 					key: 'Rgb'
 					
 				},
-				// {
-					// key: 'Saturation'
+				{
+					key: 'Saturation'
 					
-				// },
+				},
+				{
+					key: 'hue'
+					
+				},
+				{ key: 'desaturate' },
+				{ key: 'negative' },
+				{ key: 'desaturateLuminance' },
+				{ key: 'sepia' },
+				{ key: 'brownie' },
+				{ key: 'vintagePinhole' },
+				{ key: 'kodachrome' },
+				{ key: 'technicolor' },
+				{ key: 'polaroid' },
+				{ key: 'shiftToBGR' },
+
+				// { key: 'detectedges' },// Convolution
+				// { key: 'sobelx' },
+				// { key: 'sobely' },
+				// { key: 'sharpen' },	// ??
+				// { key: 'emboss' },
+
 				{
 					anchors: this._getAnchors(),
 					clipRings: this._pClipPolygon(this.options.clip),

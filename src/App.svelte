@@ -12,7 +12,12 @@
 
 	export let params;
 	let {
-		LayerID = undefined, contrast = 0, brightness = 0, rzam = '0', gzam = '1', bzam = '2',
+		LayerID = undefined, contrast = 0, brightness = 0,
+		saturation = 0, hue = 0,
+		desaturate = false, negative = false, desaturateLuminance = false, sepia = false, brownie = false,
+		vintagePinhole = false, kodachrome = false, technicolor = false, polaroid = false, shiftToBGR = false,
+		detectedges = false, sobelx = false, sobely = false, sharpen = 1, emboss = 1,
+		rzam = '0', gzam = '1', bzam = '2',
 		startRed = 0, endRed = 1, startGreen = 0, endGreen = 1, startBlue = 0, endBlue = 1
 	} = params ? params : {};
 
@@ -28,7 +33,11 @@
 
 $: {
 	// if(curLayer) {
-		test = contrast + brightness;
+		test = contrast + brightness + saturation + hue + desaturate + negative + desaturateLuminance +
+			sepia + brownie + vintagePinhole + kodachrome + technicolor + polaroid + shiftToBGR +
+			detectedges + sobelx + sobely + sharpen + emboss;
+		if (startRed > endRed) startRed = endRed;
+		else if (endRed < startRed) endRed = startRed;
 		rgbh = {
 			r:{min: startRed, max: endRed},
 			g:{min: startGreen, max: endGreen},
@@ -70,6 +79,10 @@ $: {
 				cmd: 'ImageFilters',
 				filters: {
 					contrast, brightness,
+					saturation, hue,
+					desaturate, negative, desaturateLuminance,
+					sepia, brownie, vintagePinhole, kodachrome, technicolor, polaroid, shiftToBGR,
+detectedges, sobelx, sobely, sharpen, emboss,
 					rzam, gzam, bzam,
 					startRed, endRed, startGreen, endGreen, startBlue, endBlue
 				}
@@ -314,127 +327,211 @@ console.log('rasterHook ', res);
 		<button class="choose" on:click={selLayer}>Выбрать растр</button>
 		<span class="grey">Выбран растр</span>
 		<textarea name="" readonly={true} class="rasterText">{lProps?.title || ''}</textarea>
-	<div class="line">
-		<span class="localTitle">Задать соответствие каналов</span>
-		<div class="selectDiv">
-			<span>Красный</span>
-			<select bind:value={rzam}>
-			  <option value='0' selected>Канал 1</option>
-			  <option value='1'>Канал 2</option>
-			  <option value='2'>Канал 3</option>
-			</select>
-		</div>
-		<div class="selectDiv">
-			<span>Зеленый</span>
-			<select bind:value={gzam}>
-			  <option value='0'>Канал 1</option>
-			  <option value='1' selected>Канал 2</option>
-			  <option value='2'>Канал 3</option>
-			</select>
-		</div>
-		<div class="selectDiv">
-			<span>Синий</span>
-			<select bind:value={bzam}>
-			  <option value='0'>Канал 1</option>
-			  <option value='1'>Канал 2</option>
-			  <option value='2' selected>Канал 3</option>
-			</select>
-		</div>
+
+<details>
+	<summary>Задать соответствие каналов</summary>
+	<div class="selectDiv">
+		<span>Красный</span>
+		<select bind:value={rzam}>
+		  <option value='0' selected>Канал 1</option>
+		  <option value='1'>Канал 2</option>
+		  <option value='2'>Канал 3</option>
+		</select>
 	</div>
-	<div class="line">
-		<span class="localTitle">Параметры гистограммы</span>
-		<div class="rangerWrap">
-			<span class="sliderTitle">Контраст: {contrast}</span>
-			<span class="spanWrap">
-				<div class="labels">
-					<div>-1</div>
-				</div>
-				<div class="sliderWrap">
-					<input class="inputType" type="range" min=-1 max=1 bind:value={contrast} step=0.01 />
-				</div>
-				<div class="labels">
-					<div>1</div>
-				</div>
-			</span>
-		</div>
-
-		<div class="rangerWrap">
-			<span class="sliderTitle">Яркость: {brightness}</span>
-			<span class="spanWrap">
-				<div class="labels">
-					<div>-1</div>
-				</div>
-				<div class="sliderWrap">
-					<input class="inputType" type="range" min=-1 max=1 bind:value={brightness} step=0.01 />
-				</div>
-				<div class="labels">
-					<div>1</div>
-				</div>
-			</span>
-		</div>
+	<div class="selectDiv">
+		<span>Зеленый</span>
+		<select bind:value={gzam}>
+		  <option value='0'>Канал 1</option>
+		  <option value='1' selected>Канал 2</option>
+		  <option value='2'>Канал 3</option>
+		</select>
 	</div>
-	<div class="line">
-		<span class="localTitle">Каналы</span>
-		<div class="rangerWrap">
-			<span class="sliderTitle">Красный</span>
-			<span class="spanWrap">
-				<div class="labels">
-					<div class="label">{nice(startRed)}</div>
-				</div>
-				<div class="sliderWrap">
-					<!-- DoubleRangeSlider bind:start={startRed} bind:end={endRed}/ -->
-				</div>
-				<div class="labels">
-					<div class="label">{nice(endRed)}</div>
-				</div>
-			</span>
-		</div>
-
-		<div class="rangerWrap">
-			<span class="sliderTitle">Зеленый</span>
-			<span class="spanWrap">
-				<div class="labels">
-					<div class="label">{nice(startGreen)}</div>
-				</div>
-				<div class="sliderWrap">
-					<!-- DoubleRangeSlider bind:start = {startGreen} bind:end = {endGreen}/ -->
-				</div>
-				<div class="labels">
-					<div class="label">{nice(endGreen)}</div>
-				</div>
-			</span>
-		</div>
-
-		<div class="rangerWrap">
-			<span class="sliderTitle">Синий</span>
-			<span class="spanWrap">
-				<div class="labels">
-					<div class="label">{nice(startBlue)}</div>
-				</div>
-				<div class="sliderWrap">
-					<!-- DoubleRangeSlider bind:start = {startBlue} bind:end = {endBlue} / -->
-				</div>
-				<div class="labels">
-					<div class="label">{nice(endBlue)}</div>
-				</div>
-			</span>
-		</div>
-
-		<div class="rangerWrap">
-			<span class="localTitle">Все вместе</span>
-			<span class="spanWrap">
-				<div class="labels">
-					<div class="label">{nice(startAllCol)}</div>
-				</div>
-				<div class="sliderWrap">
-					<!-- DoubleRangeSlider bind:start={startAllCol} bind:end={endAllCol} on:change={()=> flagDownAll = true} /-->
-				</div>
-				<div class="labels">
-					<div class="label">{nice(endAllCol)}</div>
-				</div>
-			</span>
-		</div>
+	<div class="selectDiv">
+		<span>Синий</span>
+		<select bind:value={bzam}>
+		  <option value='0'>Канал 1</option>
+		  <option value='1'>Канал 2</option>
+		  <option value='2' selected>Канал 3</option>
+		</select>
 	</div>
+</details>
+<details>
+	<summary>Параметры гистограммы</summary>
+	<div class="rangerWrap">
+		<span class="sliderTitle">Контраст: {contrast}</span>
+		<span class="spanWrap">
+			<div class="labels">
+				<div>-1</div>
+			</div>
+			<div class="sliderWrap">
+				<input class="inputType" type="range" min=-1 max=1 bind:value={contrast} step=0.01 />
+			</div>
+			<div class="labels">
+				<div>1</div>
+			</div>
+		</span>
+	</div>
+
+	<div class="rangerWrap">
+		<span class="sliderTitle">Яркость: {brightness}</span>
+		<span class="spanWrap">
+			<div class="labels">
+				<div>-1</div>
+			</div>
+			<div class="sliderWrap">
+				<input class="inputType" type="range" min=-1 max=1 bind:value={brightness} step=0.01 />
+			</div>
+			<div class="labels">
+				<div>1</div>
+			</div>
+		</span>
+	</div>
+</details>
+
+<details>
+	<summary>Каналы</summary>
+	<div class="rangerWrap">
+		<span class="sliderTitle">Красный</span>
+		<span class="spanWrap">
+			<div class="labels">
+				<div class="label">{nice(startRed)}</div>
+			</div>
+			<div class="sliderWrap dbl">
+				<input class="inputType dbl left" type="range" min="0" max=1 bind:value={startRed} step="0.01" />
+				<!--div class="left" style="width:calc({100 * startRed}% - 0%);"></div -->
+				<input class="inputType dbl right" type="range" min=0 max=1 bind:value={endRed} step=0.01 />
+				<!--div class="right" style="width:calc({100 * (1 - endRed)}% - 7px);"></div -->
+			</div>
+			<div class="labels">
+				<div class="label">{nice(endRed)}</div>
+			</div>
+		</span>
+	</div>
+
+	<div class="rangerWrap">
+		<span class="sliderTitle">Зеленый</span>
+		<span class="spanWrap">
+			<div class="labels">
+				<div class="label">{nice(startGreen)}</div>
+			</div>
+			<div class="sliderWrap">
+				<DoubleRangeSlider bind:start = {startGreen} bind:end = {endGreen} />
+			</div>
+			<div class="labels">
+				<div class="label">{nice(endGreen)}</div>
+			</div>
+		</span>
+	</div>
+
+	<div class="rangerWrap">
+		<span class="sliderTitle">Синий</span>
+		<span class="spanWrap">
+			<div class="labels">
+				<div class="label">{nice(startBlue)}</div>
+			</div>
+			<div class="sliderWrap">
+				<DoubleRangeSlider bind:start = {startBlue} bind:end = {endBlue} />
+			</div>
+			<div class="labels">
+				<div class="label">{nice(endBlue)}</div>
+			</div>
+		</span>
+	</div>
+
+	<div class="rangerWrap">
+		<span class="localTitle">Все вместе</span>
+		<span class="spanWrap">
+			<div class="labels">
+				<div class="label">{nice(startAllCol)}</div>
+			</div>
+			<div class="sliderWrap">
+				<DoubleRangeSlider bind:start={startAllCol} bind:end={endAllCol} on:change={()=> flagDownAll = true} />
+			</div>
+			<div class="labels">
+				<div class="label">{nice(endAllCol)}</div>
+			</div>
+		</span>
+	</div>
+</details>
+<details>
+	<summary>Оттенок/Насыщенность</summary>
+	<div class="rangerWrap">
+		<span class="sliderTitle">Насыщенность: {saturation}</span>
+		<span class="spanWrap">
+			<div class="labels">
+				<div>-1</div>
+			</div>
+			<div class="sliderWrap">
+				<input class="inputType" type="range" min=-1 max=1 bind:value={saturation} step=0.01 />
+			</div>
+			<div class="labels">
+				<div>1</div>
+			</div>
+		</span>
+	</div>
+	<div class="rangerWrap">
+		<span class="sliderTitle">Оттенок: {hue}</span>
+		<span class="spanWrap">
+			<div class="labels">
+				<div>-1</div>
+			</div>
+			<div class="sliderWrap">
+				<input class="inputType" type="range" min=-1 max=1 bind:value={hue} step=0.01 />
+			</div>
+			<div class="labels">
+				<div>1</div>
+			</div>
+		</span>
+	</div>
+</details>
+<details>
+	<summary>desaturate/negative</summary>
+	<input class="checkbox" type="checkbox" bind:checked={desaturate} /><label class="label">- включить desaturate</label><br />
+	<input class="checkbox" type="checkbox" bind:checked={negative} /><label class="label">- включить negative</label><br />
+	<input class="checkbox" type="checkbox" bind:checked={desaturateLuminance} /><label class="label">- включить desaturateLuminance</label><br />
+	<input class="checkbox" type="checkbox" bind:checked={sepia} /><label class="label">- включить sepia</label><br />
+	<input class="checkbox" type="checkbox" bind:checked={brownie} /><label class="label">- включить brownie</label><br />
+	<input class="checkbox" type="checkbox" bind:checked={vintagePinhole} /><label class="label">- включить vintagePinhole</label><br />
+	<input class="checkbox" type="checkbox" bind:checked={kodachrome} /><label class="label">- включить kodachrome</label><br />
+	<input class="checkbox" type="checkbox" bind:checked={technicolor} /><label class="label">- включить technicolor</label><br />
+	<input class="checkbox" type="checkbox" bind:checked={polaroid} /><label class="label">- включить polaroid</label><br />
+	<input class="checkbox" type="checkbox" bind:checked={shiftToBGR} /><label class="label">- включить shiftToBGR</label>
+</details>
+<!-- details open>
+	<summary>Convolution</summary>
+	<input class="checkbox" type="checkbox" bind:checked={detectedges} /><label class="label">- включить detectedges</label><br />
+	<input class="checkbox" type="checkbox" bind:checked={sobelx} /><label class="label">- включить sobelx</label><br />
+	<input class="checkbox" type="checkbox" bind:checked={sobely} /><label class="label">- включить sobely</label><br />
+	<div class="rangerWrap">
+		<span class="sliderTitle">sharpen: {sharpen}</span>
+		<span class="spanWrap">
+			<div class="labels">
+				<div>-1</div>
+			</div>
+			<div class="sliderWrap">
+				<input class="inputType" type="range" min=-1 max=1 bind:value={sharpen} step=0.01 />
+			</div>
+			<div class="labels">
+				<div>1</div>
+			</div>
+		</span>
+	</div>
+	<div class="rangerWrap">
+		<span class="sliderTitle">emboss: {emboss}</span>
+		<span class="spanWrap">
+			<div class="labels">
+				<div>-1</div>
+			</div>
+			<div class="sliderWrap">
+				<input class="inputType" type="range" min=-1 max=1 bind:value={emboss} step=0.01 />
+			</div>
+			<div class="labels">
+				<div>1</div>
+			</div>
+		</span>
+	</div>
+</details -->
+
 	</section>
 	<div class="buttonWrapper">
 			<button class="mainButton cancel" on:click={() => {reSetData();}}>Отменить</button>
@@ -489,6 +586,43 @@ console.log('rasterHook ', res);
 .scrollbar::-webkit-scrollbar-thumb {
   background-color: #686b8494;
 }
+
+details	summary {
+	font-weight: bold;
+	cursor: pointer;
+}
+
+input.dbl + div {
+	pointer-events: none;
+	top: 7px;
+	position: absolute;
+  background-color: red;
+  height: 4px;
+      z-index: 1;
+	      background-color: gainsboro;
+}
+input.dbl.right + div {
+  right: -2px;
+}
+details	input.dbl.left div {
+	background-color: red;
+	display: block;
+}
+
+input.dbl.left::after {
+	background-color: red;
+	display: block;
+}
+details	input.dbl::-webkit-slider-runnable-thumb {
+	background: red;
+}
+details	input.dbl.left::-webkit-slider-runnable-track {
+	  /* background-color: red; */
+}
+details	input.dbl.right {
+
+}
+
 	.line {
 	}
 	.buttonWrapper {
@@ -514,22 +648,6 @@ console.log('rasterHook ', res);
 		background-color: #82A0D8;
 	}
 
-/*
-
-*/
-	.line1 {
-		margin-top: 10px;
-		width: 90%;
-		display: flex;
-		/* justify-content: center; */
-		padding-left: 5%;
-		flex-direction: column;
-		background-color: white;
-		padding-top: 10px;
-		padding-bottom: 10px;
-		/* padding-right: 5%; */
-	}
-
 	.rangerWrap {
 		display: flex;
 		justify-content: space-between;
@@ -548,12 +666,14 @@ console.log('rasterHook ', res);
 	}
 
 	.sliderWrap {
-		width: 80%;
+    position: relative;
+		width: 100%;
 		line-height: 8px;
 	}
 
 	.inputType {
-		-webkit-appearance: none;
+/*		-webkit-appearance: none;
+*/
 		appearance: none;
 		width: 100%;
 		background-color: blue;

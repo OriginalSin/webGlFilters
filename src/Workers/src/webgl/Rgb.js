@@ -27,7 +27,7 @@ class Rgb extends Program {
 	}
 
     apply(pars) {
-		let { source, bitmap, target, vertices, fbo, texture, params } = pars;
+		let { source, bitmap, target, params } = pars;
 
         let gl = this.gl;
 		gl.useProgram(this.id);
@@ -43,9 +43,9 @@ class Rgb extends Program {
 		let filters = parsData.filters;
 // console.log(' ___  ____', filters);
 		// gl.uniform2f(this.fs.uniform.rband.location, 0.5, 0.7);
-		gl.uniform2f(this.fs.uniform.rband.location, filters.startRed, filters.endRed);
-		gl.uniform2f(this.fs.uniform.gband.location, filters.startGreen, filters.endGreen);
-		gl.uniform2f(this.fs.uniform.bband.location, filters.startBlue, filters.endBlue);
+		gl.uniform2f(this.uniform.rband.location, filters.startRed, filters.endRed);
+		gl.uniform2f(this.uniform.gband.location, filters.startGreen, filters.endGreen);
+		gl.uniform2f(this.uniform.bband.location, filters.startBlue, filters.endBlue);
     
 		gl.drawArrays(gl.TRIANGLES, 0, 6);	// Draw the rectangle.
     }

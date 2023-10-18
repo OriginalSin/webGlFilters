@@ -17,24 +17,22 @@ const vertSize = 4 * floatSize;
 
 const vss = `
 	precision highp float;
-	attribute vec2 ${attributes.pos};
-	attribute vec2 ${attributes.uv};
+	attribute vec2 pos;
+	attribute vec2 uv;
 	varying vec2 vUv;
-	// uniform float ${uniforms.flipY};
 
 	void main(void) {
 		vUv = uv;
-		// gl_Position = vec4(${attributes.pos}.x, ${attributes.pos}.y*${uniforms.flipY}, 0.0, 1.);
-		gl_Position = vec4(${attributes.pos}.x, -${attributes.pos}.y, 0.0, 1.);
+		gl_Position = vec4(pos.x, -pos.y, 0.0, 1.);
 	}
 `;
 const fss = `
 	precision highp float;
 	varying vec2 vUv;
-	uniform sampler2D ${uniforms.texture};
+	uniform sampler2D texture;
 
 	void main(void) {
-		gl_FragColor = texture2D(${uniforms.texture}, vUv);
+		gl_FragColor = texture2D(texture, vUv);
 	}
 `;
 const _tempFramebuffers = [null, null];
@@ -110,10 +108,11 @@ class Program {
 	}
 
 	constructor(opt) {
-		const { vsSource = vss, fsSource = fss, gl, anchors, clipPolygon, m } = opt;
+		const { vsSource=vss, fsSource=fss, gl, anchors, clipPolygon, type='' , m } = opt;
 		this.gl = gl;
 		this.vsSource = vsSource;
 		this.fsSource = fsSource;
+		this.type = type;
 		this.m = m;
         this.vertexBuffer = gl.createBuffer();		// Create a buffer to hold the vertices
 		this.init();
@@ -129,6 +128,7 @@ class Program {
 		this.id = id;
 		this.vs = vs;
 		this.fs = fs;
+// console.warn('____', this.type, vs, fs);
 		gl.attachShader(id, vs.shader);
 		gl.attachShader(id, fs.shader);
 		gl.linkProgram(id);
@@ -138,16 +138,22 @@ class Program {
 		}
 		gl.useProgram(id);
 		
+		const pt = {attribute: {}, uniform: {}};
+		// const attribute = {}, uniform = {};
 		[vs, fs].forEach(it => {
 			const {source} = it;
-			const pt = ['attribute', 'uniform'].reduce((a, c) => {
-				const attr = Program.parseShaderSource(gl, source, c, id);
-				a[c] = attr;
-				return a;
-			}, {});
-			it.attribute = pt.attribute;
-			it.uniform = pt.uniform;
+			// const pt = ['attribute', 'uniform'].reduce((a, c) => {
+			['attribute', 'uniform'].forEach(c => {
+				const h = Program.parseShaderSource(gl, source, c, id);
+				pt[c] = {...pt[c], ...h};
+				// pt[c] = attr;
+				// return a;
+			});
+			// it.attribute = pt.attribute;
+			// it.uniform = pt.uniform;
 		});
+		this.attribute = pt.attribute || {};
+		this.uniform = pt.uniform || {};
 	}
 
     // init() {
@@ -176,10 +182,10 @@ class Program {
 
     enableAttribArrays() {
         let gl = this.gl;
-		const vertAttrib = this.vs.attribute['pos'].location;	// Find and set up the uniforms and attributes
+		const vertAttrib = this.attribute['pos'].location;	// Find and set up the uniforms and attributes
 		gl.enableVertexAttribArray(vertAttrib);
 		gl.vertexAttribPointer(vertAttrib, 2, gl.FLOAT, false, vertSize , 0);
-		const uv = this.vs.attribute['uv'].location;	// Find and set up the uniforms and attributes
+		const uv = this.attribute['uv'].location;	// Find and set up the uniforms and attributes
 		gl.enableVertexAttribArray(uv);
 		gl.vertexAttribPointer(uv, 2, gl.FLOAT, false, vertSize, 2 * floatSize);
     }

@@ -2,6 +2,16 @@ import ColorMatrix from './ColorMatrix';
 import Program from './Program';
 
 class Contrast extends ColorMatrix {
+    apply(pars) {
+		let { source, bitmap, target, params } = pars;
+        let parsData = params.ImageFilters;
+		if (parsData.changed.contrast) {
+			delete parsData.changed.contrast;
+			this.refreshProgram(parsData.filters.contrast);
+		}
+		this.repaint(bitmap, source, target);
+    }
+
     refreshProgram(val) {
         const {gl, id} = this;
 		var v = (val || 0) + 1;
@@ -19,28 +29,6 @@ class Contrast extends ColorMatrix {
 		gl.deleteProgram(id);
 		this.init();
 // console.log(' __refreshProgram____', val);
-    }
-
-    apply(pars) {
-		let { source, bitmap, target, vertices, fbo, texture, flipY, params } = pars;
-        let parsData = params.ImageFilters;
-		if (parsData.changed.contrast) {
-			delete parsData.changed.contrast;
-			this.refreshProgram(parsData.filters.contrast);
-		}
-        let gl = this.gl;
-		gl.useProgram(this.id);
-
-		this.bindBuffer(bitmap);
-		gl.bindTexture(gl.TEXTURE_2D, source.texture);
-		gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);	// make this the framebuffer we are rendering to.
-
-    // Tell the shader the resolution of the framebuffer.
-    // gl.uniform2f(resolutionLocation, bitmap.width, bitmap.height);
-
-		gl.uniform1fv(this.fs.uniform['m'].location, this.m);
-
-		gl.drawArrays(gl.TRIANGLES, 0, 6);	// Draw the rectangle.
     }
 
 }

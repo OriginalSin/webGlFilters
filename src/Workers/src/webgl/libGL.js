@@ -1,13 +1,13 @@
 // import earcut from 'earcut';
 // import { getMatrix4fv, project } from './Matrix4fv.js';
 import ImageTransform from './ImageTransform';
+import Program from './Program';
 import ColorMatrix from './ColorMatrix';
-import Brightness from './Brightness';
-import Contrast from './Contrast';
-import Saturation from './Saturation';
+import Convolution from './Convolution';
+// import Contrast from './Contrast';
+// import Saturation from './Saturation';
 import RgbChange from './RgbChange';
 import Rgb from './Rgb';
-import Program from './Program';
 
 // import ImageFilter from './ImageFilter.js'
 // import PolylineRender from './gmx/PolygonsRender.js'
@@ -49,6 +49,7 @@ const glUtils = {
 					let key = info.key.toLowerCase(),
 						// out = glUtils.programsAttr[key] || {},
 						p;
+console.warn('____', info);
 					switch (key) {
 						case 'rgb':
 							p = new Rgb({...info, gl});
@@ -56,19 +57,67 @@ const glUtils = {
 						case 'rgbchange':
 							p = new RgbChange({...info, gl});
 							break;
+						case 'hue':
+							p = new ColorMatrix({...info, type: 'hue', gl});
+							break;
 						case 'saturation':
-							p = new Saturation({...info, gl});
+							p = new ColorMatrix({...info, type: 'saturation', gl});
+							break;
+						case 'negative':
+							p = new ColorMatrix({...info, type: 'negative', gl});
+							break;
+						case 'desaturate':
+							p = new ColorMatrix({...info, type: 'desaturate', gl});
+							break;
+						case 'desaturateluminance':
+							p = new ColorMatrix({...info, type: 'desaturateluminance', gl});
+							break;
+						case 'sepia':
+							p = new ColorMatrix({...info, type: 'sepia', gl});
+							break;
+						case 'brownie':
+							p = new ColorMatrix({...info, type: 'brownie', gl});
+							break;
+						case 'vintagepinhole':
+							p = new ColorMatrix({...info, type: 'vintagepinhole', gl});
+							break;
+						case 'kodachrome':
+							p = new ColorMatrix({...info, type: 'kodachrome', gl});
+							break;
+						case 'technicolor':
+							p = new ColorMatrix({...info, type: 'technicolor', gl});
+							break;
+						case 'polaroid':
+							p = new ColorMatrix({...info, type: 'polaroid', gl});
+							break;
+						case 'shifttobgr':
+							p = new ColorMatrix({...info, type: 'shifttobgr', gl});
 							break;
 						case 'contrast':
-							p = new Contrast({...info, gl});
+							p = new ColorMatrix({...info, type: 'contrast', gl});
 							break;
 						case 'brightness':
-							p = new Brightness({...info, gl});
+							p = new ColorMatrix({...info, type: 'brightness', gl});
+							// p = new Brightness({...info, gl});
 							// progs.push(p);
 							break;
-						case 'colormatrix':
-							p = new ColorMatrix({...info, gl});
+
+						case 'detectedges':
+							p = new Convolution({...info, gl});
 							break;
+						case 'sobelx':
+							p = new Convolution({...info, gl});
+							break;
+						case 'sobely':
+							p = new Convolution({...info, gl});
+							break;
+						case 'sharpen':
+							p = new Convolution({...info, gl});
+							break;
+						case 'emboss':
+							p = new Convolution({...info, gl});
+							break;
+
 						case 'imagetransform':
 							p = new ImageTransform({...info, gl, resolve});
 							if (info.url) {
@@ -107,7 +156,7 @@ const glUtils = {
 			glUtils.programsAttr[cmd] = {filters, changed};
 			if (Object.keys(changed).length) glUtils.redrawGl({});
 		}
-// console.log(' ___ setParams ____', pars, glUtils.programsAttr);
+console.log(' ___ setParams ____', pars, glUtils.programsAttr);
 	},
 
     redrawGl: function (pars) {
@@ -120,10 +169,28 @@ const glUtils = {
 		gl.clearColor(0, 0, 0, 0);
 		gl.viewport(0, 0, bitmap.width, bitmap.height);
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-		const lnum = progs.length - 1;
 		let source = {texture: screenTexture}, target, vertices, params = glUtils.programsAttr;
+		const parr = progs.filter(p => {
+			if ((p.type === 'desaturate' && !params.ImageFilters.filters.desaturate) ||
+				(p.type === 'negative' && !params.ImageFilters.filters.negative) ||
+				(p.type === 'desaturateLuminance' && !params.ImageFilters.filters.desaturateLuminance) ||
+				(p.type === 'sepia' && !params.ImageFilters.filters.sepia) ||
+				(p.type === 'brownie' && !params.ImageFilters.filters.brownie) ||
+				(p.type === 'vintagePinhole' && !params.ImageFilters.filters.vintagePinhole) ||
+				(p.type === 'kodachrome' && !params.ImageFilters.filters.kodachrome) ||
+				(p.type === 'technicolor' && !params.ImageFilters.filters.technicolor) ||
+				(p.type === 'polaroid' && !params.ImageFilters.filters.polaroid) ||
+				(p.type === 'shiftToBGR' && !params.ImageFilters.filters.shiftToBGR) ||
+
+				(p.type === 'detectedges' && !params.ImageFilters.filters.detectedges) ||
+				(p.type === 'sobelx' && !params.ImageFilters.filters.sobelx) ||
+				(p.type === 'sobely' && !params.ImageFilters.filters.sobely)
+				) return false;
+			return true;
+		});
+		const lnum = parr.length - 1;
 		for (let i = 0; i < lnum; i++) {
-			const p = progs[i];
+			const p = parr[i];
 			let nm = i % 2;
 			let flipY = i % 2 == 1;
 			target = Program.getTempFramebuffer(gl, bitmap, nm);
@@ -135,7 +202,7 @@ const glUtils = {
 		gl.bindTexture(gl.TEXTURE_2D, source.texture);
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 		gl.viewport(0, 0, gl._nsgx.screenSize.width, gl._nsgx.screenSize.height);
-		progs[lnum].apply({...pars, source, vertices, bitmap});	// imagetransform
+		parr[lnum].apply({...pars, source, vertices, bitmap});	// imagetransform
     },
 };
 export default glUtils;

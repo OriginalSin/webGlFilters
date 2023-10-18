@@ -33,7 +33,7 @@ class RgbChange extends Program {
 	}
 
     apply(pars) {
-		let { source, bitmap, target, vertices, fbo, texture, params } = pars;
+		let { source, bitmap, target, params } = pars;
 
         let gl = this.gl;
 		gl.useProgram(this.id);
@@ -45,9 +45,9 @@ class RgbChange extends Program {
     // gl.uniform2f(resolutionLocation, bitmap.width, bitmap.height); 
 
 		let filters = params.ImageFilters.filters;
-		gl.uniform1i(this.fs.uniform['rzam'].location, Number(filters.rzam));
-		gl.uniform1i(this.fs.uniform['gzam'].location, Number(filters.gzam));
-		gl.uniform1i(this.fs.uniform['bzam'].location, Number(filters.bzam));
+		gl.uniform1i(this.uniform['rzam'].location, Number(filters.rzam));
+		gl.uniform1i(this.uniform['gzam'].location, Number(filters.gzam));
+		gl.uniform1i(this.uniform['bzam'].location, Number(filters.bzam));
     
 		gl.drawArrays(gl.TRIANGLES, 0, 6);	// Draw the rectangle.
     }
