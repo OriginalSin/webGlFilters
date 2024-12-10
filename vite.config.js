@@ -8,7 +8,7 @@ import glsl from 'vite-plugin-glsl';
 // https://vitejs.dev/config/
 export default defineConfig({
 	plugins: [
-		svgBuilder({ path: './svg/', prefix: '' }),
+		// svgBuilder({ path: './svg/', prefix: '' }),
         glsl(),
 		svelte(),
 		mkcert()

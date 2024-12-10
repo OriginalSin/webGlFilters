@@ -560,14 +560,14 @@ console.log('rasterHook ', res);
 		height: 100%;		
 	}
 	section.WebGLfilters {
-		height: 100vh;
-		    max-width: 360px;
+		height: calc(100vh - 1rem);
+		max-width: 390px;
 		/* display: flex; */
 		/* flex-direction: column; */
-		padding: 0 10px;
+		padding: 0 1rex;
 		line-height: 30px;
-    display: grid;
-    grid-template-rows: 30px calc(100% - 100px) 50px;
+		display: grid;
+		grid-template-rows: 30px calc(100% - 92px) 50px;
 
 	}
 	.header {
@@ -577,6 +577,7 @@ console.log('rasterHook ', res);
 
 	.blockLine  {
 		overflow-y: auto;
+		padding: 1rex;
 	}
 .scrollbar::-webkit-scrollbar {
   width: 5px;
